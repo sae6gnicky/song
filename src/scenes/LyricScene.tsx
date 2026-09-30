@@ -20,6 +20,12 @@ export const LyricScene: React.FC<{
   const events = timedEvents(scene);
   const currentIdx = activeIndex(events, frame);
 
+  // 줄이 많은 씬(Pre-Chorus 12줄, Chorus 11줄)에서 큰 글씨가 넘치지 않도록
+  // 줄 수에 따라 크기/간격을 부드럽게 축소 (8줄 이하는 100%, 그 이상은 점점 축소)
+  const n = events.length;
+  const fit = n <= 8 ? 1 : Math.max(0.66, 8 / n);
+  const gap = Math.round(24 * fit);
+
   return (
     <AbsoluteFill
       style={{
@@ -33,7 +39,7 @@ export const LyricScene: React.FC<{
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 22,
+          gap,
           alignItems: "center",
           textAlign: "center",
         }}
@@ -57,7 +63,7 @@ export const LyricScene: React.FC<{
               {ev.en && (
                 <div
                   style={{
-                    fontSize: bigEnglish ? 66 : 46,
+                    fontSize: Math.round((bigEnglish ? 66 : 46) * fit),
                     fontWeight: 800,
                     color: isCurrent ? accent : "rgba(255,255,255,0.9)",
                     textShadow: isCurrent ? `0 0 24px ${accent}aa` : "none",
@@ -71,14 +77,16 @@ export const LyricScene: React.FC<{
               {ev.ko && (
                 <div
                   style={{
-                    fontSize: ev.en ? 26 : 44,
+                    // 한글 단독 가사는 영어 가사와 비슷한 크기로 크게 (가독성)
+                    fontSize: Math.round((ev.en ? 30 : bigEnglish ? 62 : 58) * fit),
                     fontWeight: ev.en ? 500 : 700,
                     color: ev.en
-                      ? "rgba(255,255,255,0.6)"
+                      ? "rgba(255,255,255,0.65)"
                       : isCurrent
                       ? accent
-                      : "rgba(255,255,255,0.9)",
-                    marginTop: ev.en ? 4 : 0,
+                      : "rgba(255,255,255,0.92)",
+                    marginTop: ev.en ? 6 : 0,
+                    lineHeight: 1.25,
                     textShadow:
                       !ev.en && isCurrent ? `0 0 20px ${accent}88` : "none",
                     fontFamily: "var(--kr-font, sans-serif)",

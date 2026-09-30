@@ -19,17 +19,23 @@ export const ElementRun: React.FC<{ scene: Scene }> = ({ scene }) => {
   const { fps } = useVideoConfig();
 
   const events = timedEvents(scene).filter((e) => e.symbol);
-  const idx = Math.max(0, activeIndex(events, frame));
-  const currentEv = events[idx];
+  // 첫 원소의 실제 시각 이전에는 idx = -1 (아직 아무 원소도 표시 안 함).
+  // 기존엔 Math.max(0, ...) 때문에 씬 시작부터 첫 원소가 강제로 떠서 너무 일찍 나왔음.
+  const idx = activeIndex(events, frame);
+  const hasCurrent = idx >= 0;
+  const currentEv = hasCurrent ? events[idx] : undefined;
   const currentSymbol = currentEv?.symbol ?? "";
   const el = getElement(currentSymbol);
   const accent = el ? CATEGORY_COLORS[el.category] : "#4cc9f0";
 
-  // 지금까지 등장한 원소 누적 하이라이트
-  const active = new Set(events.slice(0, idx + 1).map((e) => e.symbol!));
+  // 지금까지 등장한 원소만 누적 하이라이트 (아직 없으면 빈 집합)
+  const active = new Set(
+    hasCurrent ? events.slice(0, idx + 1).map((e) => e.symbol!) : []
+  );
 
   // 현재 원소 등장 애니메이션 (해당 이벤트 localFrame 기준)
-  const localInStep = frame - (currentEv?.localFrame ?? 0);
+  // 아직 첫 원소 전이면 음수로 두어 opacity/scale이 0에서 시작하게 함
+  const localInStep = hasCurrent ? frame - (currentEv!.localFrame ?? 0) : -9999;
   const pop = spring({
     frame: Math.max(0, localInStep),
     fps,
@@ -92,10 +98,11 @@ export const ElementRun: React.FC<{ scene: Scene }> = ({ scene }) => {
           </div>
           <div
             style={{
-              fontSize: 72,
-              fontWeight: 800,
+              fontSize: 76,
+              fontWeight: 700,
               color: "#fff",
               opacity: koOpacity,
+              letterSpacing: "-0.01em",
               marginTop: 8,
               fontFamily: "var(--kr-font, sans-serif)",
             }}

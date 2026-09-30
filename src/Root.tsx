@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Composition, staticFile, continueRender, delayRender } from "remotion";
 import { getAudioDurationInSeconds } from "@remotion/media-utils";
-import { loadFont as loadKrFont } from "@remotion/google-fonts/BlackHanSans";
+import { loadFont as loadKrFont } from "@remotion/google-fonts/NotoSansKR";
 import { loadFont as loadDisplayFont } from "@remotion/google-fonts/Orbitron";
 import { ElementMusicVideo, AUDIO_SRC } from "./ElementMusicVideo";
 import {
@@ -15,8 +15,8 @@ import {
 // LRC 마지막 가사 시각 + 여유 2.5초를 폴백 길이로 사용
 const FALLBACK_SEC = Math.max(FALLBACK_DURATION_SEC, lrcLastTime() + 2.5);
 
-// 한글 디스플레이 폰트 + 영문 테크 폰트
-const kr = loadKrFont();
+// 한글 가독성 폰트(Noto Sans KR) + 영문 테크 폰트(Orbitron)
+const kr = loadKrFont("normal", { weights: ["500", "700", "900"] });
 const display = loadDisplayFont();
 
 // CSS 변수로 폰트 패밀리 노출 (컴포넌트에서 var(--kr-font) 등으로 사용)
