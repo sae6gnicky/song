@@ -31,31 +31,26 @@ npm run render:hd
 > `npm run dev` 로 Remotion Studio를 열면 타임라인을 스크럽하면서
 > 가사·원소 등장 타이밍이 음악과 맞는지 바로 확인할 수 있습니다.
 
-## 싱크(타이밍) 조정 방법
+## 싱크(타이밍) 조정 방법 — LRC 기반 ✅
 
-모든 타이밍은 [`src/data/timeline.ts`](src/data/timeline.ts) 의 `SCENES` 배열에서 관리합니다.
-각 씬의 `start` 값(초)이 해당 구간이 시작되는 시각입니다. 현재 값은 아래 타임스탬프 기준입니다.
+이 프로젝트는 **`lyrics.lrc` 의 정확한 타임스탬프**를 그대로 사용합니다.
+가사 한 줄 한 줄, 원소 하나하나가 LRC에 적힌 시각에 맞춰 등장하므로 음악과 자동으로 싱크됩니다.
 
-| 시각 | 섹션 |
-|------|------|
-| 0:00 | Intro (원소기호) |
-| 0:08 | Intro (영어 후렴) |
-| 0:16 | Verse 1 (H~Si) |
-| 0:29 | Verse 1 (P~Ar) |
-| 0:37 | Pre-Chorus (1·2족) |
-| 0:45 | Pre-Chorus (13~18족) |
-| 0:59 | Chorus |
-| 1:23 | Verse 2 (K~Kr, 전이금속) |
-| 1:37 | Chorus |
-| 1:52 | Rap (Rb~Xe) |
-| 2:07 | Bridge (란타넘족) |
-| 2:28 | Rap (Hf~Rn) |
-| 2:41 | Final Rap (악티늄족~초중원소) |
-| 3:20 | Final Chorus |
-| 3:44 | Outro (ELEMENT / One more / Let's go!) |
+- LRC 원문은 [`src/data/lrc.ts`](src/data/lrc.ts) 의 `LRC_TEXT` 에 들어 있습니다.
+- `[mm:ss.xx]가사` 형식을 파싱해서 [`src/data/timeline.ts`](src/data/timeline.ts) 가
+  자동으로 씬(Intro/Verse/Chorus/Rap/Bridge/Final/Outro)과 이벤트 타이밍을 계산합니다.
+- 섹션 마커(`[Intro]`, `[Verse 1]` 등)를 기준으로 씬이 나뉘고,
+  `수소 — H` 형태의 줄은 자동으로 원소로 인식되어 주기율표가 하이라이트됩니다.
 
-각 `element-run` 씬 안에서 원소들은 씬 길이에 맞춰 **균등 분배**되어 순차 하이라이트됩니다.
-특정 원소 타이밍을 더 맞추고 싶으면 씬을 쪼개거나 `start` 값을 조정하세요.
+### 타이밍을 다시 맞추고 싶다면
+
+1. 싱크 툴로 새 `lyrics.lrc` 를 만든다.
+2. 그 내용을 [`src/data/lrc.ts`](src/data/lrc.ts) 의 `LRC_TEXT` 에 붙여넣는다
+   (또는 `public/lyrics.lrc` 도 함께 교체).
+3. 끝. 씬과 원소 타이밍이 자동으로 다시 계산됩니다.
+
+> 영상 전체 길이는 `public/One More.mp3` 의 실제 길이에 맞춰 자동 조정됩니다
+> (오디오를 못 읽는 경우 LRC 마지막 시각 + 여유로 폴백).
 
 ## 오디오 파일
 
@@ -71,7 +66,10 @@ src/
   ElementMusicVideo.tsx   # 씬 시퀀싱(메인 조립)
   data/
     elements.ts           # 118개 원소 데이터 + 족별 색상
-    timeline.ts           # 씬 구조 + 타임스탬프
+    lrc.ts                # LRC 가사 원문(타임스탬프 포함)
+    timeline.ts           # LRC 파싱 → 씬/이벤트 자동 생성
+  scenes/
+    timing.ts             # 씬 내 이벤트 타이밍 계산 헬퍼
   components/
     PeriodicTable.tsx     # 18×9 주기율표 그리드
     Background.tsx         # 배경 그라디언트/그리드

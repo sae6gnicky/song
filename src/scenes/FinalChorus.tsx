@@ -1,27 +1,21 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  interpolate,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { PeriodicTable } from "../components/PeriodicTable";
 import { Legend } from "../components/Legend";
 import { ELEMENTS } from "../data/elements";
 import { SectionLabel } from "./LyricScene";
 import type { Scene } from "../data/timeline";
+import { activeIndex, timedEvents } from "./timing";
 
 const ALL = new Set(ELEMENTS.map((e) => e.symbol));
 
-// 최종 후렴: 전체 주기율표를 위에 크게 + 하단에 가사/범례 요약
-export const FinalChorus: React.FC<{
-  scene: Scene;
-  durationInFrames: number;
-}> = ({ scene, durationInFrames }) => {
+// 최종 후렴: 전체 주기율표 + 하단에 현재 가사(정확한 시각) + 범례
+export const FinalChorus: React.FC<{ scene: Scene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const accent = "#4cc9f0";
-  const n = scene.lines.length;
-  const per = durationInFrames / n;
-  const idx = Math.min(n - 1, Math.floor(frame / per));
+  const events = timedEvents(scene);
+  const idx = Math.max(0, activeIndex(events, frame));
+  const cur = events[idx];
 
   const tableOpacity = interpolate(frame, [0, 20], [0, 1], {
     extrapolateRight: "clamp",
@@ -29,7 +23,7 @@ export const FinalChorus: React.FC<{
 
   return (
     <AbsoluteFill style={{ alignItems: "center" }}>
-      <SectionLabel title={scene.title ?? "FINAL"} accent={accent} />
+      <SectionLabel title={scene.title || "FINAL"} accent={accent} />
 
       <div
         style={{
@@ -42,7 +36,6 @@ export const FinalChorus: React.FC<{
         <PeriodicTable active={ALL} focus={null} scale={1} />
       </div>
 
-      {/* 현재 가사 라인 */}
       <div
         style={{
           position: "absolute",
@@ -53,7 +46,7 @@ export const FinalChorus: React.FC<{
           padding: "0 120px",
         }}
       >
-        {scene.lines[idx]?.en && (
+        {cur?.en && (
           <div
             style={{
               fontSize: 44,
@@ -63,10 +56,10 @@ export const FinalChorus: React.FC<{
               fontFamily: "var(--display-font, sans-serif)",
             }}
           >
-            {scene.lines[idx].en}
+            {cur.en}
           </div>
         )}
-        {scene.lines[idx]?.ko && (
+        {cur?.ko && (
           <div
             style={{
               fontSize: 34,
@@ -76,12 +69,21 @@ export const FinalChorus: React.FC<{
               fontFamily: "var(--kr-font, sans-serif)",
             }}
           >
-            {scene.lines[idx].ko}
+            {cur.ko}
           </div>
         )}
       </div>
 
-      <div style={{ position: "absolute", bottom: 50, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 50,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <Legend />
       </div>
     </AbsoluteFill>

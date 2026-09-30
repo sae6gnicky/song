@@ -7,18 +7,18 @@ import {
   useVideoConfig,
 } from "remotion";
 import type { Scene } from "../data/timeline";
+import { activeIndex, timedEvents } from "./timing";
 
-// 영어/한글 가사 라인을 순차적으로 표시 (Intro-lyric, Chorus, Pre-chorus, Final)
+// 영어/한글 가사 라인을 정확한 시각에 순차 표시
 export const LyricScene: React.FC<{
   scene: Scene;
-  durationInFrames: number;
   accent?: string;
   bigEnglish?: boolean;
-}> = ({ scene, durationInFrames, accent = "#4cc9f0", bigEnglish }) => {
+}> = ({ scene, accent = "#4cc9f0", bigEnglish }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const n = scene.lines.length;
-  const per = durationInFrames / n;
+  const events = timedEvents(scene);
+  const currentIdx = activeIndex(events, frame);
 
   return (
     <AbsoluteFill
@@ -28,9 +28,7 @@ export const LyricScene: React.FC<{
         padding: "0 120px",
       }}
     >
-      {scene.title && (
-        <SectionLabel title={scene.title} accent={accent} />
-      )}
+      {scene.title && <SectionLabel title={scene.title} accent={accent} />}
       <div
         style={{
           display: "flex",
@@ -40,9 +38,8 @@ export const LyricScene: React.FC<{
           textAlign: "center",
         }}
       >
-        {scene.lines.map((line, i) => {
-          const appear = i * per;
-          const local = frame - appear;
+        {events.map((ev, i) => {
+          const local = frame - ev.localFrame;
           const s = spring({
             frame: Math.max(0, local),
             fps,
@@ -53,17 +50,11 @@ export const LyricScene: React.FC<{
             extrapolateRight: "clamp",
           });
           const y = interpolate(s, [0, 1], [30, 0]);
-          const isCurrent = frame >= appear && frame < appear + per;
+          const isCurrent = i === currentIdx;
 
           return (
-            <div
-              key={i}
-              style={{
-                opacity,
-                transform: `translateY(${y}px)`,
-              }}
-            >
-              {line.en && (
+            <div key={i} style={{ opacity, transform: `translateY(${y}px)` }}>
+              {ev.en && (
                 <div
                   style={{
                     fontSize: bigEnglish ? 66 : 46,
@@ -74,26 +65,26 @@ export const LyricScene: React.FC<{
                     fontFamily: "var(--display-font, sans-serif)",
                   }}
                 >
-                  {line.en}
+                  {ev.en}
                 </div>
               )}
-              {line.ko && (
+              {ev.ko && (
                 <div
                   style={{
-                    fontSize: line.en ? 26 : 44,
-                    fontWeight: line.en ? 500 : 700,
-                    color: line.en
+                    fontSize: ev.en ? 26 : 44,
+                    fontWeight: ev.en ? 500 : 700,
+                    color: ev.en
                       ? "rgba(255,255,255,0.6)"
                       : isCurrent
                       ? accent
                       : "rgba(255,255,255,0.9)",
-                    marginTop: line.en ? 4 : 0,
+                    marginTop: ev.en ? 4 : 0,
                     textShadow:
-                      !line.en && isCurrent ? `0 0 20px ${accent}88` : "none",
+                      !ev.en && isCurrent ? `0 0 20px ${accent}88` : "none",
                     fontFamily: "var(--kr-font, sans-serif)",
                   }}
                 >
-                  {line.ko}
+                  {ev.ko}
                 </div>
               )}
             </div>

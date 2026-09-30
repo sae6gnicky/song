@@ -10,28 +10,26 @@ import { PeriodicTable } from "../components/PeriodicTable";
 import { SectionLabel } from "./LyricScene";
 import { CATEGORY_COLORS, CATEGORY_LABELS_KO, getElement } from "../data/elements";
 import type { Scene } from "../data/timeline";
+import { activeIndex, timedEvents } from "./timing";
 
 // 원소 나열: 왼쪽 대형 타이포(한글명 + 기호), 오른쪽 주기율표 채워짐
-export const ElementRun: React.FC<{
-  scene: Scene;
-  durationInFrames: number;
-}> = ({ scene, durationInFrames }) => {
+// 각 원소는 LRC의 정확한 시각(localFrame)에 등장한다.
+export const ElementRun: React.FC<{ scene: Scene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const symbols = scene.lines.map((l) => l.symbol!).filter(Boolean);
-  const per = durationInFrames / symbols.length;
-  const idx = Math.min(symbols.length - 1, Math.floor(frame / per));
-  const currentSymbol = symbols[idx];
-  const currentLine = scene.lines[idx];
+  const events = timedEvents(scene).filter((e) => e.symbol);
+  const idx = Math.max(0, activeIndex(events, frame));
+  const currentEv = events[idx];
+  const currentSymbol = currentEv?.symbol ?? "";
   const el = getElement(currentSymbol);
   const accent = el ? CATEGORY_COLORS[el.category] : "#4cc9f0";
 
   // 지금까지 등장한 원소 누적 하이라이트
-  const active = new Set(symbols.slice(0, idx + 1));
+  const active = new Set(events.slice(0, idx + 1).map((e) => e.symbol!));
 
-  // 현재 원소 등장 애니메이션 (per 구간 내 로컬 프레임)
-  const localInStep = frame - idx * per;
+  // 현재 원소 등장 애니메이션 (해당 이벤트 localFrame 기준)
+  const localInStep = frame - (currentEv?.localFrame ?? 0);
   const pop = spring({
     frame: Math.max(0, localInStep),
     fps,
@@ -102,7 +100,7 @@ export const ElementRun: React.FC<{
               fontFamily: "var(--kr-font, sans-serif)",
             }}
           >
-            {currentLine?.ko}
+            {currentEv?.ko}
           </div>
           {el && (
             <div

@@ -7,24 +7,21 @@ import {
   useVideoConfig,
 } from "remotion";
 import type { Scene } from "../data/timeline";
+import { timedEvents } from "./timing";
 
-// 아웃트로: ELEMENT / One more / Let's go!
-export const Outro: React.FC<{ scene: Scene; durationInFrames: number }> = ({
-  scene,
-  durationInFrames,
-}) => {
+// 아웃트로: ELEMENT / One more / Let's go! (정확한 시각에 등장)
+export const Outro: React.FC<{ scene: Scene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const n = scene.lines.length;
-  const per = durationInFrames / (n + 1);
+  const events = timedEvents(scene);
+  const n = events.length;
 
   return (
     <AbsoluteFill
       style={{ justifyContent: "center", alignItems: "center", gap: 10 }}
     >
-      {scene.lines.map((line, i) => {
-        const appear = i * per;
-        const local = frame - appear;
+      {events.map((ev, i) => {
+        const local = frame - ev.localFrame;
         const s = spring({
           frame: Math.max(0, local),
           fps,
@@ -36,6 +33,7 @@ export const Outro: React.FC<{ scene: Scene; durationInFrames: number }> = ({
         });
         const big = i === 0;
         const last = i === n - 1;
+        const text = ev.en || ev.ko || ev.raw;
         return (
           <div
             key={i}
@@ -52,7 +50,7 @@ export const Outro: React.FC<{ scene: Scene; durationInFrames: number }> = ({
               fontFamily: "var(--display-font, sans-serif)",
             }}
           >
-            {line.en}
+            {text}
           </div>
         );
       })}

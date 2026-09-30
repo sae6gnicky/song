@@ -8,21 +8,29 @@ import {
 } from "remotion";
 import { CATEGORY_COLORS, getElement } from "../data/elements";
 import type { Scene } from "../data/timeline";
+import { timedEvents } from "./timing";
 
-// 인트로: 원소기호를 하나씩 크게 튀어나오게
-export const IntroSymbols: React.FC<{ scene: Scene; durationInFrames: number }> = ({
-  scene,
-  durationInFrames,
-}) => {
+// 인트로: "H, He" 같은 줄을 정확한 시각에 등장시키며 기호별로 크게 표시
+export const IntroSymbols: React.FC<{ scene: Scene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const symbols = scene.lines.map((l) => l.symbol!).filter(Boolean);
-  const per = durationInFrames / symbols.length;
+
+  // 각 줄을 콤마로 분해해 (기호, 등장프레임) 목록 생성
+  const events = timedEvents(scene);
+  const symbols: { sym: string; appear: number }[] = [];
+  for (let li = 0; li < events.length; li++) {
+    const ev = events[li];
+    const parts = ev.raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+    const next = events[li + 1];
+    const span = (next ? next.localFrame : ev.localFrame + fps) - ev.localFrame;
+    parts.forEach((sym, pi) => {
+      const appear = ev.localFrame + Math.round((span / parts.length) * pi);
+      symbols.push({ sym, appear });
+    });
+  }
 
   return (
-    <AbsoluteFill
-      style={{ justifyContent: "center", alignItems: "center" }}
-    >
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
       <div
         style={{
           display: "flex",
@@ -32,8 +40,7 @@ export const IntroSymbols: React.FC<{ scene: Scene; durationInFrames: number }> 
           maxWidth: 1400,
         }}
       >
-        {symbols.map((sym, i) => {
-          const appear = i * per;
+        {symbols.map(({ sym, appear }, i) => {
           const local = frame - appear;
           const s = spring({
             frame: Math.max(0, local),

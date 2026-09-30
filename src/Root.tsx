@@ -4,7 +4,16 @@ import { getAudioDurationInSeconds } from "@remotion/media-utils";
 import { loadFont as loadKrFont } from "@remotion/google-fonts/BlackHanSans";
 import { loadFont as loadDisplayFont } from "@remotion/google-fonts/Orbitron";
 import { ElementMusicVideo, AUDIO_SRC } from "./ElementMusicVideo";
-import { FPS, SONG_DURATION_SEC, VIDEO_HEIGHT, VIDEO_WIDTH } from "./data/timeline";
+import {
+  FPS,
+  FALLBACK_DURATION_SEC,
+  lrcLastTime,
+  VIDEO_HEIGHT,
+  VIDEO_WIDTH,
+} from "./data/timeline";
+
+// LRC 마지막 가사 시각 + 여유 2.5초를 폴백 길이로 사용
+const FALLBACK_SEC = Math.max(FALLBACK_DURATION_SEC, lrcLastTime() + 2.5);
 
 // 한글 디스플레이 폰트 + 영문 테크 폰트
 const kr = loadKrFont();
@@ -30,12 +39,12 @@ export const RemotionRoot: React.FC = () => {
     <Composition
       id="ElementOneMore"
       component={ElementMusicVideo}
-      durationInFrames={Math.round(SONG_DURATION_SEC * FPS)}
+      durationInFrames={Math.round(FALLBACK_SEC * FPS)}
       fps={FPS}
       width={VIDEO_WIDTH}
       height={VIDEO_HEIGHT}
       defaultProps={{
-        totalDurationInFrames: Math.round(SONG_DURATION_SEC * FPS),
+        totalDurationInFrames: Math.round(FALLBACK_SEC * FPS),
       }}
       // 실제 오디오 길이에 맞춰 영상 길이/씬 배분 자동 조정
       calculateMetadata={async () => {
@@ -47,7 +56,7 @@ export const RemotionRoot: React.FC = () => {
             props: { totalDurationInFrames: frames },
           };
         } catch (e) {
-          const frames = Math.round(SONG_DURATION_SEC * FPS);
+          const frames = Math.round(FALLBACK_SEC * FPS);
           return {
             durationInFrames: frames,
             props: { totalDurationInFrames: frames },
