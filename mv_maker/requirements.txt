@@ -1,0 +1,2 @@
+# Gemini 이미지 생성용 공식 SDK (Nano Banana / Nano Banana Pro)
+google-genai>=1.0.0
